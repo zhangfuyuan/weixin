@@ -1,0 +1,82 @@
+<!-- 首页 -->
+<view class="container">
+  <!-- 搜索框 -->
+  <view class="search-box">
+      <view class="weui-search-bar">
+          <view class="weui-search-bar__form">
+              <view class="weui-search-bar__box">
+                  <icon class="weui-icon-search_in-box" type="search" size="14"></icon>
+                  <input type="text" class="weui-search-bar__input" placeholder="搜索" value="{{inputVal}}" focus="{{inputShowed}}" bindinput="inputTyping" />
+                  <view class="weui-icon-clear" wx:if="{{inputVal.length > 0}}" bindtap="clearInput">
+                      <icon type="clear" size="14"></icon>
+                  </view>
+              </view>
+              <label class="weui-search-bar__label" hidden="{{inputShowed}}" bindtap="showInput">
+                  <icon class="weui-icon-search" type="search" size="14"></icon>
+                  <view class="weui-search-bar__text">搜索</view>
+              </label>
+          </view>
+          <view class="weui-search-bar__cancel-btn" hidden="{{!inputShowed}}" bindtap="hideInput">取消</view>
+      </view>
+      <view class="weui-cells searchbar-result" wx:if="{{inputVal.length > 0}}">
+          <navigator url="" class="weui-cell" hover-class="weui-cell_active">
+              <view class="weui-cell__bd">
+                  <view>实时搜索文本</view>
+              </view>
+          </navigator>
+          <navigator url="" class="weui-cell" hover-class="weui-cell_active">
+              <view class="weui-cell__bd">
+                  <view>实时搜索文本</view>
+              </view>
+          </navigator>
+          <navigator url="" class="weui-cell" hover-class="weui-cell_active">
+              <view class="weui-cell__bd">
+                  <view>实时搜索文本</view>
+              </view>
+          </navigator>
+          <navigator url="" class="weui-cell" hover-class="weui-cell_active">
+              <view class="weui-cell__bd">
+                  <view>实时搜索文本</view>
+              </view>
+          </navigator>
+      </view>
+  </view>
+
+  <!-- 轮播图 -->
+  <view class="swiper-box">
+    <swiper class="swiper_box" indicator-dots="{{indicatorDots}}" indicator-active-color="#409EFF" vertical="{{vertical}}"
+                autoplay="{{autoplay}}" interval="{{interval}}" duration="{{duration}}" bindchange="swiperchange">
+            <block wx:for="{{banners}}" wx:key="id">
+                <swiper-item>
+                    <image bindtap="tapBanner" data-id="{{item.businessId}}" src="{{item.picUrl}}_m" class="slide-image" />
+                </swiper-item>
+            </block>
+        </swiper>
+  </view>
+
+  <!-- 分栏标题 -->
+  <view class="title">
+      <view class="line_flag"></view>
+      <text>推荐商品</text>
+  </view>
+
+  <!-- 推荐商品 -->
+  <view class="goods-box">
+    <view class="goods-container" wx:for-items="{{goods}}" wx:key="{{index}}" bindtap="toDetailsTap" data-id="{{item.id}}">
+           <view class="img-box">
+              <image src="{{item.pic}}_m" class="image" mode="aspectFit" lazy-load="true"/>
+           </view>
+           <view class="goods-title">{{item.name}}</view>
+           <view class="goods-price">¥ {{item.minPrice}}</view>
+        </view>
+  </view>
+
+  <!-- 下拉刷新 -->
+  <view hidden="{{!loadingMoreHidden}}" class="weui-loadmore">
+      <view class="weui-loading"></view>
+      <view class="weui-loadmore__tips">正在加载</view>
+  </view>
+
+  <!-- 至底提示 -->
+  <view hidden="{{loadingMoreHidden}}" class="no-more-goods">没有更多啦</view>
+</view>

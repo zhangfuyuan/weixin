@@ -1,0 +1,356 @@
+<style lang="less">
+  .container {
+    .start {
+      display: flex;
+      height: 100%;
+      align-items: center;
+      .startbtn {
+        width: 200rpx;
+        height: 200rpx;
+        text-align: center;
+        font-size: 36rpx;
+        line-height: 200rpx;
+        font-weight: bold;
+        background: radial-gradient(circle ,#ff5777 ,#ff0077);
+        color: #fff;
+        border-radius: 50%;
+      }
+    }
+
+    .content {
+      width: 100%;
+      .wrap {
+        .time {
+          font-size: 36rpx;
+          color: #333;
+          text-align: center;
+        }
+
+        .progress {
+          width: 80%;
+          margin: 0 auto;
+        }
+
+        .explain {
+          color: #999;
+          font-size: 22rpx;
+          text-align: center;
+        }
+
+        .box {
+          display: flex;
+          flex-wrap: wrap;
+          width: 100%;
+          background: #000;
+          justify-content: space-around;
+          &.hide {
+            animation: hide .5s ease-out;
+          }
+          &.show {
+            animation: show .5s ease-out;
+          }
+
+          .boxview {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #666;
+            font-size: 36rpx;
+          }
+        }
+
+        .over {
+          display: flex;
+          height: 200px;
+          flex-direction: column;
+          align-items: center;
+          justify-content: space-around;
+          background-image: linear-gradient(#ff5777, #ff0077);
+          color: white;
+          &.hide {
+            animation: hide .5s ease-out;
+          }
+          &.show {
+            animation: show .5s ease-out;
+          }
+
+          .nick {
+            font-size: 32rpx;
+          }
+
+          .grade {
+            font-size: 36rpx;
+            padding-top: 10px;
+          }
+
+          .choose {
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            font-size: 28rpx;
+            padding-top: 10px;
+            .btn {
+              border: 1px solid #ffe8ee;
+              border-radius: 5px;
+              padding: 5px;
+            }
+          }
+        }
+
+        .margin-top {
+          margin-top: 15px;
+        }
+      }
+    }
+
+    .touch-class {
+      opacity: .7;
+    }
+  }
+
+  @keyframes hide {
+    0% {
+      transform: rotate3d(0, 1, 0, 0deg);
+    }
+    100% {
+      transform: rotate3d(0, 1, 0, 90deg);
+    }
+  }
+
+  @keyframes show {
+    0% {
+      transform: rotate3d(0, 1, 0, 90deg);
+    }
+    100% {
+      transform: rotate3d(0, 1, 0, 0deg);
+    }
+  }
+</style>
+
+<template>
+  <view class="container">
+    <view class="start" wx:if="{{!isStart}}">
+      <view class="startbtn {{touchClass}}" @tap="start" @touchstart="addTouchClass" @touchend="removeTouchClass">开始</view>
+    </view>
+
+    <view class="content" wx:else>
+      <view class="wrap">
+        <view class="time margin-top">
+          {{ countTime }} {{ now }}
+        </view>
+
+        <view class="progress margin-top">
+          <wxc-progress percent="{{percent}}" active-color="#ac89ff,#ff76a2"></wxc-progress>
+        </view>
+
+        <view class="explain margin-top">
+          <text>
+            请找出以下与众不同的一个并点击：
+          </text>
+        </view>
+
+        <view class="box margin-top {{isBoxShow ? 'show' : 'hide'}}" wx:if="{{!isOver}}">
+          <repeat for="{{boxList}}" key="index" index="index" item="item">
+            <view class="boxview {{touchIndex===(index+1) ? touchClass : ''}}"
+                  @tap="guess({{item.isTrue}})"
+                  style="width:{{viewWidth}}px;height:{{viewWidth}}px;margin:{{spaceWidth}}px 0;{{item.bgUrl?'background:url('+item.bgUrl+') center no-repeat;background-size: cover;':(item.opacity?'background:#ff0077;opacity:'+item.opacity+';':'background:#fff;')}}"
+                  @touchstart="addTouchClass({{index+1}})"
+                  @touchend="removeTouchClass">
+              {{ item.txt || '' }}
+            </view>
+          </repeat>
+        </view>
+
+        <view class="over margin-top {{isOverShow ? 'show' : 'hide'}}" wx:else>
+          <text class="nick">{{ userInfo.nickName }} 您的成绩是：</text>
+          <text class="grade">已闯{{ grade===5 ? '全' : grade }}关 用时{{ countMin*60 + countSec }}秒</text>
+          <view class="choose">
+            <text class="btn {{touchClass}}" @tap="reStart" @touchstart="addTouchClass" @touchend="removeTouchClass">再来一次</text>
+            <text>|</text>
+            <text id="shareBtn" class="btn" @tap="shareApp">右上角分享</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <audio src="{{audioURL}}" loop="true" id="bgm"></audio>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import testMixin from '../mixins/test'
+
+  export default class Home extends wepy.page {
+    config = {
+      navigationBarTitleText: '找找不同',
+      usingComponents: {
+        'wxc-progress': '../../packages/@minui/wxc-progress/dist/index'
+      }
+    }
+    components = {}
+
+    mixins = [testMixin]
+    data = {
+      isStart: false,
+      isOver: false,
+      countMin: 0,
+      countSec: 1,
+      curViewIndex: 0,
+      grade: 0,
+      timer: null,
+      screenWidth: 0,
+      percent: 20,
+      touchClass: '',
+      touchIndex: 0,
+      isBoxShow: false,
+      isOverShow: false,
+      userInfo: {
+        nickName: '加载中...'
+      },
+      audioContext: null,
+      audioURL: 'http://7xnvmn.com1.z0.glb.clouddn.com/%E6%B8%B8%E6%88%8F%E5%8E%9F%E5%A3%B0-%E5%A4%A9%E5%A4%A9%E8%BF%9E%E8%90%8C%E8%83%8C%E6%99%AF%E9%9F%B3%E4%B9%90.mp3'
+    }
+
+    computed = {
+      countTime () {
+        return (this.countMin < 10 ? '0' + this.countMin : this.countMin) + ':' + (this.countSec < 10 ? '0' + this.countSec : this.countSec)
+      },
+      boxList () {
+        return this.items[this.curViewIndex]
+      },
+      rowNum () {
+        return Math.sqrt(this.boxList.length)
+      },
+      spaceWidth () {
+        return parseInt(this.screenWidth / this.rowNum * 0.05)
+      },
+      viewWidth () {
+        return (this.screenWidth - this.spaceWidth * 2 * this.rowNum) / this.rowNum
+      }
+    }
+
+    methods = {
+      addTouchClass(i) {
+        if (i) {
+          this.touchIndex = i
+        }
+        this.touchClass = 'touch-class'
+      },
+      removeTouchClass() {
+        this.touchClass = ''
+      },
+      start () {
+        this.isStart = true
+        this.isBoxShow = true
+        this._count()
+        this.audioContext.play()
+      },
+      guess (i) {
+        if (i) {
+          if (this.curViewIndex < 4) {
+            this.curViewIndex++
+            this.percent += 20
+          } else {
+            this._stop()
+          }
+          this.grade++
+        } else {
+          this._stop()
+        }
+      },
+      reStart () {
+        this.isOverShow = false
+        setTimeout(() => {
+          this.isOver = false
+          this.isBoxShow = true
+          this.$apply()
+        }, 500)
+        this._init()
+        this._count()
+      },
+      shareApp(e) {
+        this.onShareAppMessage({
+          from: 'button',
+          target: e.target
+        })
+      }
+    }
+
+    events = {}
+
+    onLoad() {
+      this.$parent.getUserInfo((userInfo) => {
+        if (userInfo) this.userInfo = userInfo
+        this.$apply()
+      })
+
+      let self = this
+      wepy.getSystemInfo({
+        success (res) {
+          self.screenWidth = res.screenWidth
+          self.$apply()
+        }
+      })
+
+      this.audioContext = wepy.createAudioContext('bgm')
+    }
+    onShareAppMessage(res) {
+      if (res.from === 'button') {
+        // 来自页面内转发按钮
+        wepy.showShareMenu({
+          withShareTicket: true
+        })
+      }
+      return {
+        title: '找找不同小游戏',
+        path: '/page/home',
+        success: function(res) {
+          // 转发成功
+        },
+        fail: function(res) {
+          // 转发失败
+        }
+      }
+    }
+    _count () {
+      clearInterval(this.timer)
+      this.timer = setInterval(() => {
+        this.countSec++
+
+        if (this.countSec >= 60) {
+          this.countSec = 0
+          this.countMin++
+        }
+
+        if (this.countMin >= 60) {
+          this._stopCount()
+        }
+        this.$apply()
+      }, 1000)
+    }
+    _stopCount () {
+      clearInterval(this.timer)
+      this.timer = null
+    }
+    _init() {
+      this.curViewIndex = 0
+      this.percent = 20
+      this.grade = 0
+      this.countMin = 0
+      this.countSec = 1
+      this.audioContext.play()
+    }
+    _stop() {
+      this.audioContext.pause()
+      this.isBoxShow = false
+      setTimeout(() => {
+        this.isOver = true
+        this.isOverShow = true
+        this.$apply()
+      }, 500)
+      this._stopCount()
+    }
+  }
+</script>

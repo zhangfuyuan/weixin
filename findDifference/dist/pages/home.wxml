@@ -1,0 +1,44 @@
+
+  <view class="container">
+    <view class="start"  wx:if="{{!isStart}}">
+      <view class="startbtn {{touchClass}}" bindtap="start" bindtouchstart="addTouchClass" bindtouchend="removeTouchClass">开始</view>
+    </view>
+
+    <view class="content"  wx:else>
+      <view class="wrap">
+        <view class="time margin-top">
+          {{ countTime }} {{ now }}
+        </view>
+
+        <view class="progress margin-top">
+          <wxc-progress percent="{{percent}}" active-color="#ac89ff,#ff76a2"/>
+        </view>
+
+        <view class="explain margin-top">
+          <text>
+            请找出以下与众不同的一个并点击：
+          </text>
+        </view>
+
+        <view class="box margin-top {{isBoxShow ? 'show' : 'hide'}}" wx:if="{{!isOver}}">
+          <block wx:for="{{boxList}}" wx:for-index="index" wx:for-item="item" wx:key="index">
+            <view class="boxview {{touchIndex===(index+1) ? touchClass : ''}}" bindtap="guess" style="width:{{viewWidth}}px;height:{{viewWidth}}px;margin:{{spaceWidth}}px 0;{{item.bgUrl?'background:url('+item.bgUrl+') center no-repeat;background-size: cover;':(item.opacity?'background:#ff0077;opacity:'+item.opacity+';':'background:#fff;')}}" bindtouchstart="addTouchClass" bindtouchend="removeTouchClass" data-wpyguess-a="{{item.isTrue}}" data-wpyaddtouchclass-a="{{index+1}}">
+              {{ item.txt || '' }}
+            </view>
+          </block>
+        </view>
+
+        <view class="over margin-top {{isOverShow ? 'show' : 'hide'}}" wx:else>
+          <text class="nick">{{ userInfo.nickName }} 您的成绩是：</text>
+          <text class="grade">已闯{{ grade===5 ? '全' : grade }}关 用时{{ countMin*60 + countSec }}秒</text>
+          <view class="choose">
+            <text class="btn {{touchClass}}" bindtap="reStart" bindtouchstart="addTouchClass" bindtouchend="removeTouchClass">再来一次</text>
+            <text>|</text>
+            <text id="shareBtn" class="btn" bindtap="shareApp">右上角分享</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <audio src="{{audioURL}}" loop="true" id="bgm"/>
+  </view>
